@@ -1,0 +1,37 @@
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { describe, expect, it, vi } from 'vitest'
+import FilePreviewModal from './FilePreviewModal.jsx'
+
+vi.mock('./TextPreview.jsx', () => ({ default: ({ file }) => <div>Text preview ready for {file.name}</div> }))
+
+const baseProps = { onClose: vi.fn(), onDownload: vi.fn(), onPrevious: vi.fn(), onNext: vi.fn(), hasPrevious: true, hasNext: true }
+
+describe('file preview modal', () => {
+  it('opens an honest unsupported fallback and handles keyboard navigation', async () => {
+    const props = { ...baseProps, onClose: vi.fn(), onPrevious: vi.fn(), onNext: vi.fn() }
+    render(<FilePreviewModal {...props} file={{ key: 'archive', name: 'records.zip', size: 10, lastModified: '2026-01-01' }} filesApi={{ createPreviewUrl: vi.fn() }} />)
+    expect(await screen.findByRole('dialog', { name: /preview records.zip/i })).toBeInTheDocument()
+    expect(await screen.findByText('Preview not supported')).toBeInTheDocument()
+    fireEvent.keyDown(document, { key: 'ArrowLeft' })
+    fireEvent.keyDown(document, { key: 'ArrowRight' })
+    fireEvent.keyDown(document, { key: 'Escape' })
+    expect(props.onPrevious).toHaveBeenCalledOnce()
+    expect(props.onNext).toHaveBeenCalledOnce()
+    expect(props.onClose).toHaveBeenCalledOnce()
+  })
+
+  it('shows a retryable error when signed URL generation fails', async () => {
+    const filesApi = { createPreviewUrl: vi.fn().mockRejectedValue(new Error('network')) }
+    render(<FilePreviewModal {...baseProps} file={{ key: 'image', name: 'scan.png', size: 10, lastModified: '2026-01-01' }} filesApi={filesApi} />)
+    await waitFor(() => expect(screen.getByText('Preview unavailable')).toBeInTheDocument())
+    expect(screen.getByRole('button', { name: /retry preview/i })).toBeInTheDocument()
+  })
+
+  it('opens env files in the text preview renderer', async () => {
+    const filesApi = { createPreviewUrl: vi.fn().mockResolvedValue({ url: 'https://s3.example/private-text' }) }
+    render(<div className="page"><FilePreviewModal {...baseProps} file={{ key: 'company/Data/professional portfolio.env', name: 'professional portfolio.env', size: 378, lastModified: '2026-01-01' }} filesApi={filesApi} /></div>)
+    expect(await screen.findByText('Text preview ready for professional portfolio.env')).toBeInTheDocument()
+    expect(screen.getByRole('dialog', { name: /preview professional portfolio.env/i }).parentElement).toBe(document.body)
+    expect(filesApi.createPreviewUrl).toHaveBeenCalledWith('company/Data/professional portfolio.env', expect.any(AbortSignal))
+  })
+})

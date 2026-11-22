@@ -1,0 +1,9 @@
+import { Check, Download } from 'lucide-react'
+import FileIcon from './FileIcon.jsx'
+import FileActionsMenu from './FileActionsMenu.jsx'
+import { formatBytes, formatDate } from '../../utils/formatters.js'
+import { getTypeLabel } from '../../utils/fileTypes.js'
+
+export default function FileTable({ files, selectedKey, onSelect, onPreview, onDownload, onDelete, canDelete, downloading }) {
+  return <div className="file-table-wrap"><table className="file-table"><colgroup><col /><col className="type-column" /><col className="size-column" /><col className="date-column" /><col className="actions-column" /></colgroup><thead><tr><th>Name</th><th>Type</th><th>Size</th><th>Last modified</th><th><span className="sr-only">Actions</span></th></tr></thead><tbody>{files.map((file) => <tr key={file.key} className={selectedKey === file.key ? 'selected' : ''} onClick={() => onSelect(file)} onDoubleClick={() => onPreview(file)}><td><div className="file-name-cell"><span className={`select-circle ${selectedKey === file.key ? 'checked' : ''}`}>{selectedKey === file.key && <Check size={13} />}</span><button className="file-name-button" onClick={(event) => { event.stopPropagation(); onPreview(file) }} title={`Preview ${file.name}`} aria-label={`Preview ${file.name}`}><FileIcon name={file.name} /><span className="file-name-copy"><strong>{file.name}</strong><small>{getTypeLabel(file.name)} · {formatBytes(file.size)}</small></span></button></div></td><td>{getTypeLabel(file.name)}</td><td>{formatBytes(file.size)}</td><td>{formatDate(file.lastModified)}</td><td><div className="file-row-actions"><button className="icon-btn" disabled={downloading} onClick={(event) => { event.stopPropagation(); onDownload(file) }} aria-label={`Download ${file.name}`}><Download size={17} /></button><FileActionsMenu file={file} onPreview={onPreview} onDownload={onDownload} onDelete={onDelete} canDelete={canDelete} downloading={downloading} /></div></td></tr>)}</tbody></table></div>
+}
