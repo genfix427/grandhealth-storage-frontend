@@ -11,6 +11,8 @@ Production-oriented React frontend for Grand Health Institute's private AWS file
 - Direct-to-S3 uploads using presigned URLs, exact `application/octet-stream` content type, progress, cancel, retry, and 100 MB validation
 - Secure downloads based on backend-provided object keys and short-lived presigned URLs
 - Fullscreen universal previews for images, PDF, DOC/DOCX, XLS/XLSX/CSV, text/code/JSON/Markdown, video, and audio
+- Permission-aware file editing: native text/code/JSON/Markdown and spreadsheet editors, plus a download/edit/re-upload workflow for every binary format
+- Safe `-edited` cloud revisions with optional immediate download; originals are retained because the current API has no atomic replace/version endpoint
 - Lazy preview renderer chunks, PDF page-at-a-time rendering, virtualized spreadsheet/code rows, keyboard navigation, zoom, rotation, and fullscreen controls
 - Dashboard metrics explicitly scoped to currently loaded API results
 - Admin, profile, settings, light/dark/system themes, skeletons, empty states, and responsive navigation
@@ -84,6 +86,8 @@ The preview system deliberately reuses `POST /files/download-url`. It requests a
 
 The frontend never sends file bytes through API Gateway. It requests an upload URL and then performs an S3 `PUT` without the Cognito authorization header. Download URLs are used immediately and are not persisted.
 
+Editing reuses the same upload contract. Text and spreadsheet content can be edited directly in the browser. Other formats are downloaded, edited in a trusted native application, and selected again for validation and upload. A save creates an explicit `-edited` copy in the original folder and can also download that revision locally. The frontend deliberately does not simulate an atomic overwrite by uploading a replacement and deleting the original; a failure between those operations could lose data. A true Replace/Version action requires an authorized backend endpoint with conditional writes and version metadata.
+
 Folder query values are relative to the `company/` root. S3 keys returned by the API are preserved exactly for downloads.
 
 Folder creation uses the same authorized upload flow: the frontend stores a small `.folder` marker inside the requested prefix, then hides that reserved marker from file lists and dashboard totals. This allows empty S3 prefixes to remain visible without making the bucket public or requiring a separate API route. The backend must permit the reserved marker filename and safe folder names containing spaces.
@@ -129,6 +133,7 @@ The interface intentionally does not fabricate unsupported functions. These requ
 3. Add multipart upload endpoints for large files with resume support.
 4. Add separately authorized endpoints for rename, move, and user administration.
 5. Add an organization-controlled document conversion pipeline for PPT/PPTX and pixel-identical legacy DOC previews.
+6. Add an atomic file-version endpoint so edited copies can be promoted to the current version without a delete-and-upload race.
 
 ## Universal file previews
 
@@ -146,6 +151,17 @@ The interface intentionally does not fabricate unsupported functions. These requ
 | MP3, WAV, OGG/OGA, M4A, AAC, FLAC | Native audio with seek, volume, duration, and speed selection where the browser supports the codec. |
 
 Double-clicking a grid card or list row opens preview. Single click still selects the file. Preview is also available in each file actions menu and the details panel. While the viewer is open, `Escape` closes it, left/right move through the current visible file collection, and plus/minus change zoom where applicable. Keyboard navigation ignores text inputs and native media controls.
+
+### File editing
+
+Users with upload permission see **Edit** in the preview header. Read-only users do not.
+
+- DOCX files open in a responsive Word-style browser editor with formatting, tables, lists, images, find/replace, undo/redo, and DOCX export. Import uses a permissively licensed HTML editing model, so complex Word-only layout, fields, comments, and tracked changes may be simplified in the edited copy.
+- Text, code, JSON, Markdown, configuration, and similar UTF-8 files use the full-screen source editor. Invalid JSON is blocked from saving.
+- XLSX, XLS, and CSV use an editable, virtualized worksheet grid. Editing a formula cell intentionally replaces that formula with the entered value; complex formatting and macros may not round-trip exactly.
+- PDF, legacy DOC, PowerPoint, images, audio, video, archives, and unknown formats use the universal native-app workflow: download the original, edit it with the appropriate trusted application, select a same-extension revision, then save it securely.
+- Revised files are limited to 100 MB, uploaded with the exact signed `application/octet-stream` contract, stored in the original folder with an `-edited` name, and may be downloaded immediately with **Save & download**.
+- Closing with unsaved changes requires confirmation. Original objects are never deleted by the editor.
 
 Client-side parsing limits are intentionally conservative:
 

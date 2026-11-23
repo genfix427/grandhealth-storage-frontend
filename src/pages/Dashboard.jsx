@@ -54,6 +54,6 @@ export default function Dashboard() {
       <section className="panel security-panel"><span className="security-shield"><ShieldCheck size={28} /></span><div><h2>Protected by design</h2><p>Files stay private in AWS S3. Access is authorized through Cognito, and downloads use short-lived links.</p><ul><li>Role-based access</li><li>No AWS keys in your browser</li><li>Temporary file links</li></ul></div></section>
     </div>
     <UploadManager open={uploadOpen} onClose={() => setUploadOpen(false)} folder="" filesApi={filesApi} onComplete={query.refetch} />
-    {preview.file && <Suspense fallback={null}><FilePreviewModal key={preview.file.key} file={preview.file} filesApi={filesApi} onClose={preview.closePreview} onDownload={download} onPrevious={preview.previous} onNext={preview.next} hasPrevious={preview.hasPrevious} hasNext={preview.hasNext} /></Suspense>}
+    {preview.file && <Suspense fallback={null}><FilePreviewModal key={preview.file.key} file={preview.file} filesApi={filesApi} canEdit={can(PERMISSIONS.UPLOAD_FILES)} onClose={preview.closePreview} onDownload={download} onSaved={query.refetch} onPrevious={preview.previous} onNext={preview.next} hasPrevious={preview.hasPrevious} hasNext={preview.hasNext} /></Suspense>}
   </div>
 }

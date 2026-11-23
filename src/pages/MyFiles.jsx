@@ -123,6 +123,6 @@ export default function MyFiles() {
     <UploadManager open={uploadOpen} onClose={() => setUploadOpen(false)} folder={folder} filesApi={filesApi} onComplete={query.refetch} />
     <CreateFolderModal open={createFolderOpen} onClose={() => setCreateFolderOpen(false)} parentFolder={folder} filesApi={filesApi} onComplete={query.refetch} />
     <DeleteConfirmationModal target={deleteTarget} deleting={deleting} onClose={() => setDeleteTarget(null)} onConfirm={confirmDelete} />
-    {preview.file && <Suspense fallback={null}><FilePreviewModal key={preview.file.key} file={preview.file} filesApi={filesApi} onClose={preview.closePreview} onDownload={download} onPrevious={preview.previous} onNext={preview.next} hasPrevious={preview.hasPrevious} hasNext={preview.hasNext} /></Suspense>}
+    {preview.file && <Suspense fallback={null}><FilePreviewModal key={preview.file.key} file={preview.file} filesApi={filesApi} canEdit={can(PERMISSIONS.UPLOAD_FILES)} onClose={preview.closePreview} onDownload={download} onSaved={query.refetch} onPrevious={preview.previous} onNext={preview.next} hasPrevious={preview.hasPrevious} hasNext={preview.hasNext} /></Suspense>}
   </div>
 }

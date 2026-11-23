@@ -18,8 +18,9 @@ const VideoPreview = lazy(() => import('./VideoPreview.jsx'))
 const AudioPreview = lazy(() => import('./AudioPreview.jsx'))
 const UnsupportedPreview = lazy(() => import('./UnsupportedPreview.jsx'))
 const GoogleWorkspacePreview = lazy(() => import('./GoogleWorkspacePreview.jsx'))
+const FileEditorModal = lazy(() => import('./FileEditorModal.jsx'))
 
-export default function FilePreviewModal({ file, filesApi, onClose, onDownload, onPrevious, onNext, hasPrevious, hasNext }) {
+export default function FilePreviewModal({ file, filesApi, canEdit = false, onClose, onDownload, onSaved, onPrevious, onNext, hasPrevious, hasNext }) {
   const rootRef = useRef(null)
   const [source, setSource] = useState(null)
   const [sourceSignal, setSourceSignal] = useState(null)
@@ -30,11 +31,12 @@ export default function FilePreviewModal({ file, filesApi, onClose, onDownload, 
   const [rotation, setRotation] = useState(0)
   const [fitMode, setFitMode] = useState(true)
   const [fullscreen, setFullscreen] = useState(false)
+  const [editorOpen, setEditorOpen] = useState(false)
   const kind = getPreviewKind(file)
   const limitError = getPreviewLimitError(file, kind)
 
   useEffect(() => {
-    setZoom(1); setRotation(0); setFitMode(true); setError(null); setSource(null)
+    setZoom(1); setRotation(0); setFitMode(true); setError(null); setSource(null); setEditorOpen(false)
     if (!previewNeedsSignedUrl(kind)) { setStatus('ready'); return undefined }
     if (limitError) { setStatus('error'); setError(new Error('FILE_TOO_LARGE')); return undefined }
     const controller = new AbortController()
@@ -55,6 +57,7 @@ export default function FilePreviewModal({ file, filesApi, onClose, onDownload, 
 
   useEffect(() => {
     const keydown = (event) => {
+      if (editorOpen) return
       if (event.key === 'Escape') { event.preventDefault(); onClose(); return }
       if (isInteractiveTarget(event.target)) return
       if (event.key === 'ArrowLeft' && hasPrevious) { event.preventDefault(); onPrevious() }
@@ -65,7 +68,7 @@ export default function FilePreviewModal({ file, filesApi, onClose, onDownload, 
     document.addEventListener('keydown', keydown)
     document.body.classList.add('preview-open')
     return () => { document.removeEventListener('keydown', keydown); document.body.classList.remove('preview-open') }
-  }, [changeZoom, hasNext, hasPrevious, kind, onClose, onNext, onPrevious])
+  }, [changeZoom, editorOpen, hasNext, hasPrevious, kind, onClose, onNext, onPrevious])
 
   useEffect(() => {
     const update = () => setFullscreen(document.fullscreenElement === rootRef.current)
@@ -93,8 +96,9 @@ export default function FilePreviewModal({ file, filesApi, onClose, onDownload, 
   }
 
   return createPortal(<div className="file-preview-modal" ref={rootRef} role="dialog" aria-modal="true" aria-label={`Preview ${file.name}`}>
-    <PreviewHeader file={file} onDownload={onDownload} onClose={onClose} />
+    <PreviewHeader file={file} canEdit={canEdit} onEdit={() => setEditorOpen(true)} onDownload={onDownload} onClose={onClose} />
     <PreviewToolbar hasPrevious={hasPrevious} hasNext={hasNext} onPrevious={onPrevious} onNext={onNext} zoom={zoom} onZoom={changeZoom} canZoom={supportsZoom(kind)} canRotate={supportsRotation(kind)} onRotate={() => setRotation((value) => (value + 90) % 360)} onFit={fit} onOriginal={original} fullscreen={fullscreen} onFullscreen={toggleFullscreen} />
     <main className={`preview-canvas preview-kind-${kind}`}><Suspense fallback={<PreviewLoading label="Loading preview tools…" />}>{content}</Suspense></main>
+    {editorOpen && <Suspense fallback={<PreviewLoading label="Loading editor…" />}><FileEditorModal file={file} kind={kind} url={source?.url} signal={sourceSignal} filesApi={filesApi} onClose={() => setEditorOpen(false)} onDownload={onDownload} onSaved={onSaved} /></Suspense>}
   </div>, document.body)
 }

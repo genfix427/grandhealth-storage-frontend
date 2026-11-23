@@ -4,6 +4,7 @@ import FilePreviewModal from './FilePreviewModal.jsx'
 
 vi.mock('./TextPreview.jsx', () => ({ default: ({ file }) => <div>Text preview ready for {file.name}</div> }))
 vi.mock('./LegacyWordPreview.jsx', () => ({ default: ({ file }) => <div>Legacy Word preview ready for {file.name}</div> }))
+vi.mock('./FileEditorModal.jsx', () => ({ default: ({ file }) => <div role="dialog">Editor ready for {file.name}</div> }))
 
 const baseProps = { onClose: vi.fn(), onDownload: vi.fn(), onPrevious: vi.fn(), onNext: vi.fn(), hasPrevious: true, hasNext: true }
 
@@ -41,5 +42,15 @@ describe('file preview modal', () => {
     render(<FilePreviewModal {...baseProps} file={{ key: 'records/letter.doc', name: 'letter.doc', size: 1536, lastModified: '2026-01-01' }} filesApi={filesApi} />)
     expect(await screen.findByText('Legacy Word preview ready for letter.doc')).toBeInTheDocument()
     expect(filesApi.createPreviewUrl).toHaveBeenCalledWith('records/letter.doc', expect.any(AbortSignal))
+  })
+
+  it('only exposes the editor to users with edit permission', async () => {
+    const filesApi = { createPreviewUrl: vi.fn().mockResolvedValue({ url: 'https://s3.example/private-text' }) }
+    const { rerender } = render(<FilePreviewModal {...baseProps} canEdit file={{ key: 'notes.txt', name: 'notes.txt', size: 10 }} filesApi={filesApi} />)
+    const editButton = await screen.findByRole('button', { name: /edit/i })
+    fireEvent.click(editButton)
+    expect(await screen.findByText('Editor ready for notes.txt')).toBeInTheDocument()
+    rerender(<FilePreviewModal {...baseProps} canEdit={false} file={{ key: 'notes.txt', name: 'notes.txt', size: 10 }} filesApi={filesApi} />)
+    expect(screen.queryByRole('button', { name: /edit/i })).not.toBeInTheDocument()
   })
 })

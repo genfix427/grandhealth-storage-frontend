@@ -23,6 +23,15 @@ describe('files API workflows', () => {
     await createFilesApi(request).createPreviewUrl('company/reports/scan.pdf')
     expect(request).toHaveBeenCalledWith('/files/download-url', expect.objectContaining({ method: 'POST', body: { key: 'company/reports/scan.pdf' } }))
   })
+  it('saves an edited copy through a new presigned upload without deleting the original', async () => {
+    const request = vi.fn().mockResolvedValue({ url: 'https://s3.example/upload-edit', key: 'company/reports/id-report-edited.txt' })
+    const put = vi.fn().mockResolvedValue(undefined)
+    const data = new Blob(['updated'])
+    const result = await createFilesApi(request, put).saveEditedCopy({ filename: 'report-edited.txt', folder: 'reports/', data })
+    expect(request).toHaveBeenCalledWith('/files/upload-url', expect.objectContaining({ method: 'POST', body: { filename: 'report-edited.txt', folder: 'reports/', size: data.size } }))
+    expect(put).toHaveBeenCalledWith('https://s3.example/upload-edit', data, expect.objectContaining({ signal: undefined }))
+    expect(result.key).toBe('company/reports/id-report-edited.txt')
+  })
   it('deletes a file by its backend object key', async () => {
     const request = vi.fn().mockResolvedValue({ deleted: true })
     await createFilesApi(request).deleteFile('company/reports/report.pdf')
