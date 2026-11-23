@@ -11,6 +11,7 @@ import { isInteractiveTarget, previewErrorMessage } from '../../utils/previewHel
 const ImagePreview = lazy(() => import('./ImagePreview.jsx'))
 const PdfPreview = lazy(() => import('./PdfPreview.jsx'))
 const WordPreview = lazy(() => import('./WordPreview.jsx'))
+const LegacyWordPreview = lazy(() => import('./LegacyWordPreview.jsx'))
 const SpreadsheetPreview = lazy(() => import('./SpreadsheetPreview.jsx'))
 const TextPreview = lazy(() => import('./TextPreview.jsx'))
 const VideoPreview = lazy(() => import('./VideoPreview.jsx'))
@@ -82,6 +83,7 @@ export default function FilePreviewModal({ file, filesApi, onClose, onDownload, 
     if (kind === PREVIEW_KINDS.IMAGE) content = <ImagePreview {...props} />
     else if (kind === PREVIEW_KINDS.PDF) content = <PdfPreview {...props} />
     else if (kind === PREVIEW_KINDS.DOCX) content = <WordPreview {...props} />
+    else if (kind === PREVIEW_KINDS.LEGACY_DOC) content = <LegacyWordPreview {...props} />
     else if (kind === PREVIEW_KINDS.SPREADSHEET) content = <SpreadsheetPreview {...props} />
     else if (kind === PREVIEW_KINDS.TEXT) content = <TextPreview {...props} />
     else if (kind === PREVIEW_KINDS.VIDEO) content = <VideoPreview {...props} />

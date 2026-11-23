@@ -20,6 +20,7 @@ const extensionKinds = {
 export const PREVIEW_LIMITS = Object.freeze({
   text: 5 * 1024 * 1024,
   docx: 50 * 1024 * 1024,
+  'legacy-doc': 50 * 1024 * 1024,
   spreadsheet: 25 * 1024 * 1024,
 })
 
@@ -39,7 +40,7 @@ export function getPreviewKind(file = {}) {
 }
 
 export function previewNeedsSignedUrl(kind) {
-  return ![PREVIEW_KINDS.POWERPOINT, PREVIEW_KINDS.LEGACY_DOC, PREVIEW_KINDS.GOOGLE, PREVIEW_KINDS.UNSUPPORTED].includes(kind)
+  return ![PREVIEW_KINDS.POWERPOINT, PREVIEW_KINDS.GOOGLE, PREVIEW_KINDS.UNSUPPORTED].includes(kind)
 }
 
 export function getPreviewLimitError(file, kind = getPreviewKind(file)) {
@@ -49,7 +50,7 @@ export function getPreviewLimitError(file, kind = getPreviewKind(file)) {
   return `This ${kind} preview is limited to ${size} MB to protect browser performance. Download the original file instead.`
 }
 
-export function supportsZoom(kind) { return [PREVIEW_KINDS.IMAGE, PREVIEW_KINDS.PDF, PREVIEW_KINDS.DOCX].includes(kind) }
+export function supportsZoom(kind) { return [PREVIEW_KINDS.IMAGE, PREVIEW_KINDS.PDF, PREVIEW_KINDS.DOCX, PREVIEW_KINDS.LEGACY_DOC].includes(kind) }
 export function supportsRotation(kind) { return kind === PREVIEW_KINDS.IMAGE }
 
 export function getTextLanguage(name = '') {

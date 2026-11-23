@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import FilePreviewModal from './FilePreviewModal.jsx'
 
 vi.mock('./TextPreview.jsx', () => ({ default: ({ file }) => <div>Text preview ready for {file.name}</div> }))
+vi.mock('./LegacyWordPreview.jsx', () => ({ default: ({ file }) => <div>Legacy Word preview ready for {file.name}</div> }))
 
 const baseProps = { onClose: vi.fn(), onDownload: vi.fn(), onPrevious: vi.fn(), onNext: vi.fn(), hasPrevious: true, hasNext: true }
 
@@ -33,5 +34,12 @@ describe('file preview modal', () => {
     expect(await screen.findByText('Text preview ready for professional portfolio.env')).toBeInTheDocument()
     expect(screen.getByRole('dialog', { name: /preview professional portfolio.env/i }).parentElement).toBe(document.body)
     expect(filesApi.createPreviewUrl).toHaveBeenCalledWith('company/Data/professional portfolio.env', expect.any(AbortSignal))
+  })
+
+  it('loads a signed URL and opens legacy doc files in the local Word renderer', async () => {
+    const filesApi = { createPreviewUrl: vi.fn().mockResolvedValue({ url: 'https://s3.example/private-doc' }) }
+    render(<FilePreviewModal {...baseProps} file={{ key: 'records/letter.doc', name: 'letter.doc', size: 1536, lastModified: '2026-01-01' }} filesApi={filesApi} />)
+    expect(await screen.findByText('Legacy Word preview ready for letter.doc')).toBeInTheDocument()
+    expect(filesApi.createPreviewUrl).toHaveBeenCalledWith('records/letter.doc', expect.any(AbortSignal))
   })
 })

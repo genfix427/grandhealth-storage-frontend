@@ -10,7 +10,7 @@ Production-oriented React frontend for Grand Health Institute's private AWS file
 - Grid and list views, breadcrumbs, loaded-result search, filters, sorting, and details panel
 - Direct-to-S3 uploads using presigned URLs, exact `application/octet-stream` content type, progress, cancel, retry, and 100 MB validation
 - Secure downloads based on backend-provided object keys and short-lived presigned URLs
-- Fullscreen universal previews for images, PDF, DOCX, XLS/XLSX/CSV, text/code/JSON/Markdown, video, and audio
+- Fullscreen universal previews for images, PDF, DOC/DOCX, XLS/XLSX/CSV, text/code/JSON/Markdown, video, and audio
 - Lazy preview renderer chunks, PDF page-at-a-time rendering, virtualized spreadsheet/code rows, keyboard navigation, zoom, rotation, and fullscreen controls
 - Dashboard metrics explicitly scoped to currently loaded API results
 - Admin, profile, settings, light/dark/system themes, skeletons, empty states, and responsive navigation
@@ -128,7 +128,7 @@ The interface intentionally does not fabricate unsupported functions. These requ
 2. Add server-side search, storage summary metrics, and an auditable activity feed.
 3. Add multipart upload endpoints for large files with resume support.
 4. Add separately authorized endpoints for rename, move, and user administration.
-5. Add an organization-controlled document conversion pipeline for PPT/PPTX and legacy DOC previews.
+5. Add an organization-controlled document conversion pipeline for PPT/PPTX and pixel-identical legacy DOC previews.
 
 ## Universal file previews
 
@@ -139,6 +139,7 @@ The interface intentionally does not fabricate unsupported functions. These requ
 | JPG, JPEG, PNG, WEBP, GIF, BMP, SVG | Native image element with fit, original size, zoom, rotation, pan/scroll, fullscreen, and previous/next navigation. SVG is loaded as an image resource; raw SVG markup is never injected. |
 | PDF | `react-pdf`/PDF.js with one page rendered at a time, selectable text, page navigation, current-page search, zoom, fit controls, and a Vite-compatible worker. |
 | DOCX | `docx-preview` rendered in a detached DOM, altChunk rendering disabled, generated markup sanitized with DOMPurify, and then inserted into the viewer. |
+| Legacy DOC | `@file-viewer/doc` parses Word 97–2003 OLE files locally, sanitizes generated markup, and blocks external links/resources. ZIP-based DOCX files with a `.doc` extension are detected and rendered through the DOCX path. |
 | XLSX, XLS, CSV | SheetJS read-only parsing with worksheet tabs, row/column headers, formatted display values, search, and virtualized rows. Formulas, macros, and external links are not executed. |
 | TXT, JSON, XML, MD, LOG, JS/JSX, TS/TSX, CSS, HTML, SQL, PY, JAVA, YAML and similar text | UTF-8 read-only viewer with line numbers, virtualized rows, syntax highlighting, search, wrap toggle, and copy. JSON is formatted when valid. Markdown uses safe React rendering, skips raw HTML, and does not load embedded remote images. |
 | MP4, WEBM, OGV | Native streaming video with metadata preloading, seek, volume, fullscreen, and speed selection. Codec support still depends on the browser. |
@@ -151,13 +152,14 @@ Client-side parsing limits are intentionally conservative:
 - Text/code: 5 MB
 - XLS/XLSX/CSV: 25 MB
 - DOCX: 50 MB
+- Legacy DOC: 50 MB
 
 Images, video, and audio use the signed URL directly instead of loading the complete file into JavaScript memory. PDFs are page-at-a-time. Files above a parser limit remain downloadable.
 
-### Requires backend deployment
+### Backend-dependent formats and limitations
 
 - **PPT/PPTX:** needs a trusted conversion worker that produces PDF or slide images. Do not send private S3 documents to public Office/Google viewers. A production design should enqueue a conversion job, run LibreOffice or another pinned converter in an organization-controlled container runtime, write derived previews to a private preview prefix, and return a short-lived URL through an authorized API.
-- **Legacy DOC:** needs the same controlled conversion pipeline. DOCX works directly in the browser.
+- **Legacy DOC limitations:** browser preview is best-effort for Word 97–2003 files. Password-protected, damaged, very old Word 6/95, and unusually complex documents may still require downloading and opening in Microsoft Word. For pixel-identical pagination, use an organization-controlled conversion worker rather than a public document viewer.
 - **Google Docs, Sheets, and Slides:** needs separate Google OAuth endpoints, read-only Google Drive scopes, server-side encrypted refresh-token storage, an explicit Cognito-to-Google account link, and Google file metadata in the listing response. The optional UI never reuses Cognito tokens or stores Google tokens in browser storage.
 
 ### Required S3 CORS

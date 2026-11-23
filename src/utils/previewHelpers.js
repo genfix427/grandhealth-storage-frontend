@@ -34,6 +34,9 @@ export function previewErrorMessage(error) {
     PREVIEW_URL_EXPIRED: 'The secure preview link expired or access was denied. Request a fresh preview and try again.',
     PREVIEW_NOT_FOUND: 'This file could not be found in storage.',
     PREVIEW_FETCH_FAILED: 'The file could not be loaded for preview.',
+    INVALID_LEGACY_DOC: 'This file does not contain a valid Word 97–2003 document. It may have the wrong extension or be damaged.',
+    LEGACY_DOC_ENCRYPTED: 'Password-protected legacy Word documents cannot be previewed. Download the original and open it in Microsoft Word.',
+    LEGACY_DOC_UNSUPPORTED: 'This legacy Word document uses content the browser renderer could not read. Download the original to open it in Microsoft Word.',
     UNSUPPORTED_CODEC: 'Your browser cannot play this media codec. Download the original file or use a compatible player.',
   })[code] || 'This file could not be rendered. It may be corrupted or use an unsupported format.'
 }
